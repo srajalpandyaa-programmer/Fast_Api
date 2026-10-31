@@ -1,5 +1,5 @@
 from fastapi import FastAPI, status, HTTPException, Request, Depends, Header, UploadFile, File
-from fastapi.middleware.cors import CORSMiddleware
+# from fastapi.middleware.cors import CORSMiddleware
 # from fastapi.staticfiles import StaticFiles
 # import os
 # import shutil
@@ -14,29 +14,111 @@ from fastapi.middleware.cors import CORSMiddleware
 # from jose import jwt,JWTError
 # from passlib.context import CryptContext
 # from datetime import datetime, timedelta, timezone
-
+# from dotenv import load_dotenv
+# from config import settings
+import requests
+from bs4 import BeautifulSoup
 
 app = FastAPI()
 
-#Allowed Origins(Front-End URl)
-origins = [
-    "http://localhost:5173"
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins = origins, # Allow front end
-    allow_credentials= True,
-    allow_methods=["*"],#Get,put,post,delete
-    allow_headers=["*"]
-)
+# url = "https://example.com"
+# response = requests.get(url)
+# soup = BeautifulSoup(response.text, "html.parser")
+# print(soup.title.text)
 
 
-@app.get("/")
-def home():
-    return{
-        "message":"CORS ENABLE API"
+@app.get("/news")
+def get_news(page: int = 1,limit: int = 5):
+    url = "https://indianexpress.com/"
+    response = requests.get(url, timeout=10)
+    soup = BeautifulSoup(response.text, "html.parser")
+    title = []
+    for item in soup.find_all("a",class_ = "topblockNews__sidebarTitle"):
+        title.append(item.text)
+
+    #Pagination
+    start = (page -1)* limit
+    end = start + limit
+    return {
+        "page":page,
+        "limit":limit,
+        "total": len(title),
+        "data":title[start:end]
     }
+
+
+
+
+
+
+
+
+
+# response = requests.get("https://jsonplaceholder.typicode.com/posts/1")
+# data = response.json()
+# print(data)
+
+# # Get All Data
+# @app.get("/posts")
+# def get_posts():
+#     url = "https://jsonplaceholder.typicode.com/posts"
+#     response = requests.get(url, timeout=10)
+#     response.raise_for_status()
+#     return response.json()
+
+
+# @app.get("/posts/{post_id}")
+# def get_post(post_id:int):
+#     url = f"https://jsonplaceholder.typicode.com/posts/{post_id}"
+#     response = requests.get(url, timeout=10)
+#     response.raise_for_status()
+#     return response.json()
+
+
+
+
+# @app.get("/")
+# def home():
+#     return {"message": "Hello Srajal!"}
+
+
+# @app.get("/add")
+# def add(a: int, b: int):
+#     return {"result": a + b}
+
+
+
+
+
+
+
+# load_dotenv()
+#Allowed Origins(Front-End URl)
+# origins = settings.origins
+
+
+
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins = origins, # Allow front end
+#     allow_credentials= True,
+#     allow_methods=["*"],#Get,put,post,delete
+#     allow_headers=["*"]
+# )
+
+
+# @app.get("/")
+# def home():
+#     return{
+#         "message":"Hello Srajal!"
+#     }
+
+
+# @app.get("/add")
+# def add(a: int, b:int):
+#     return{
+#         "result": a + b
+#     }
 
 
 # app = FastAPI()
