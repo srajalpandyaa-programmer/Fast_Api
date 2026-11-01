@@ -1,10 +1,12 @@
+from time import time
+
 from fastapi import FastAPI, status, HTTPException, Request, Depends, Header, UploadFile, File
 # from fastapi.middleware.cors import CORSMiddleware
 # from fastapi.staticfiles import StaticFiles
 # import os
 # import shutil
 # from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-# # from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse
 # from pydantic import BaseModel
 # # import sqlite3
 # from sqlalchemy import create_engine,Column, Integer, String, Boolean
@@ -16,35 +18,96 @@ from fastapi import FastAPI, status, HTTPException, Request, Depends, Header, Up
 # from datetime import datetime, timedelta, timezone
 # from dotenv import load_dotenv
 # from config import settings
-import requests
-from bs4 import BeautifulSoup
+# import requests
+# from bs4 import BeautifulSoup
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 app = FastAPI()
+
+#Limiter Setup
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+
+#Error Handler
+@app.exception_handler(RateLimitExceeded)
+def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={
+            "detail":"Too Many Requests"
+        }
+    )
+
+#Rate Limiter API
+@app.get("/data")
+@limiter.limit("5/minute")
+def get_data(request: Request):
+    return {
+        "message":"This is a rate limited API",
+        "client_ip": get_remote_address(request)
+    }
+
+
+
+
+
 
 # url = "https://example.com"
 # response = requests.get(url)
 # soup = BeautifulSoup(response.text, "html.parser")
 # print(soup.title.text)
 
+# # Chache Storage
+# cache_data = []
+# last_fetch = 0
 
-@app.get("/news")
-def get_news(page: int = 1,limit: int = 5):
-    url = "https://indianexpress.com/"
-    response = requests.get(url, timeout=10)
-    soup = BeautifulSoup(response.text, "html.parser")
-    title = []
-    for item in soup.find_all("a",class_ = "topblockNews__sidebarTitle"):
-        title.append(item.text)
 
-    #Pagination
-    start = (page -1)* limit
-    end = start + limit
-    return {
-        "page":page,
-        "limit":limit,
-        "total": len(title),
-        "data":title[start:end]
-    }
+
+# @app.get("/news")
+# def get_news():
+#     global cache_data, last_fetch
+#     start = time.time()
+
+#     if cache_data and time.time() - last_fetch < 60:
+#         print("Using Cache Data")
+#     else:
+#         print("Fetching Fresh Data")
+#         url = "https://news.ycombinator.com/"
+#         response = requests.get(url, timeout=10)
+#         response.raise_for_status()
+#         soup = BeautifulSoup(response.text, "html.parser")
+#         cache_data = [
+#             item.text for item in soup.find_all("span", class_="titleline")
+#         ]
+#         last_fetch = time.time()
+
+
+#     end = time.time()
+#     time_taken = round(end - start, 2)
+#     print(f"Time taken to fetch data: {time_taken} seconds")
+#     return {
+#         "time_taken": time_taken,
+#         "data": cache_data[:5],
+#     }
+        
+
+
+
+    # title = []
+    # for item in soup.find_all("a",class_ = "topblockNews__sidebarTitle"):
+    #     title.append(item.text)
+
+    # #Pagination
+    # start = (page -1)* limit
+    # end = start + limit
+    # return {
+    #     "page":page,
+    #     "limit":limit,
+    #     "total": len(title),
+    #     "data":title[start:end]
+    # }
 
 
 
